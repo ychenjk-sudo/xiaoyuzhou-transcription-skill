@@ -10,6 +10,15 @@
 - 📝 超过 300 字自动分段
 - 📌 AI 生成核心要点和 Q&A
 
+## 模型配置
+
+| 步骤 | 模型 | 说明 |
+|------|------|------|
+| ASR 转录 | `qwen3-asr-flash-filetrans` | 阿里云语音识别 |
+| 核心要点 | OpenClaw 当前会话模型 | 由 Agent 生成 |
+| 关键问答 | OpenClaw 当前会话模型 | 由 Agent 生成 |
+| 逐字稿格式化 | 无需模型 | Python 脚本处理 |
+
 ## 安装
 
 将此目录复制到你的 OpenClaw skills 目录：
@@ -39,6 +48,8 @@ export QWEN_API_KEY="sk-xxx"  # 阿里云 DashScope API Key
 
 # Step 2: 格式化逐字稿
 python3 ./scripts/format_transcript.py /tmp/raw.json /tmp/formatted.md
+
+# Step 3: 由 Agent 生成核心要点和 Q&A
 ```
 
 ## 输出格式
