@@ -8,7 +8,7 @@
 - 🤖 使用 Qwen ASR (qwen3-asr-flash-filetrans) 转录，支持 8 小时长音频
 - 👥 按说话人分段 + 时间戳
 - 📝 超过 300 字自动分段
-- 📌 AI 生成核心要点和 Q&A
+- 📌 AI 生成核心要点和 Q&A（按主题分组）
 
 ## 模型配置
 
@@ -20,8 +20,6 @@
 | 逐字稿格式化 | 无需模型 | Python 脚本处理 |
 
 ## 安装
-
-将此目录复制到你的 OpenClaw skills 目录：
 
 ```bash
 git clone https://github.com/ychenjk-sudo/xiaoyuzhou-transcription-skill.git
@@ -55,22 +53,45 @@ python3 ./scripts/format_transcript.py /tmp/raw.json /tmp/formatted.md
 ## 输出格式
 
 ```markdown
-# [播客标题]
+# [播客名称] [期号]｜[标题]
+
+**播客链接**: https://www.xiaoyuzhoufm.com/episode/xxxxx  
+**主播**: [主播名]（[身份介绍]）  
+**嘉宾**: [嘉宾名]（[身份介绍]）
+
+---
 
 ## 📌 核心要点
-1. **要点一**：简要说明
-2. **要点二**：简要说明
+
+### 1. [主题一]
+- 要点内容
+- 要点内容
+
+### 2. [主题二]
+- 要点内容
+
 ...
 
+---
+
 ## ❓ 关键问答
-### Q1: 问题？
-A: 回答...
+
+### Q1: [问题]？
+[回答内容]
+
+### Q2: [问题]？
+[回答内容]
+
+...
 
 ---
 
 ## 📝 逐字稿
 
 **说话人** [00:00:00]
+段落内容...
+
+**说话人** [00:01:23]
 段落内容...
 ```
 
