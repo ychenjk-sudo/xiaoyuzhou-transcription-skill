@@ -1,154 +1,64 @@
 ---
 name: xiaoyuzhou-transcription
-description: 将小宇宙播客音频转录为文字，并生成内容总结和逐字稿。输入小宇宙链接，自动提取音频、调用Qwen ASR转录、生成核心要点和格式化逐字稿。
+description: "Transcribe 小宇宙 (Xiaoyuzhou) podcast episodes to text with structured summaries. Extracts audio from a 小宇宙 link, runs Qwen ASR transcription, formats a speaker-segmented verbatim transcript, and generates key-point summaries and Q&A. Use when a user shares a 小宇宙 podcast link, requests 播客转录 (podcast transcription), 音频转文字 (audio-to-text), 逐字稿 (verbatim transcript), or 播客内容总结 (podcast content summary)."
+user-invocable: true
+triggers:
+  - "小宇宙"
+  - "播客转录"
+  - "音频转文字"
+  - "逐字稿"
+  - "播客内容总结"
+  - "xiaoyuzhou"
+  - "podcast transcription"
 ---
 
 # 小宇宙播客转录与总结
 
-将小宇宙播客链接转录为文字，生成结构化总结和逐字稿。
+Transcribe 小宇宙 podcast episodes into structured Markdown: speaker-segmented verbatim transcript with timestamps, 5–8 key-point summaries grouped by theme, and 8–10 Q&A pairs covering core content.
 
-## 环境变量
+## Prerequisites
 
-- `QWEN_API_KEY`：阿里云 DashScope API Key（必需）
+- **Environment variable**: `QWEN_API_KEY` — 阿里云 DashScope API Key (required)
+- **Dependencies**: `curl`, `jq`, `python3`
 
-## 模型配置
+## Workflow
 
-| 步骤 | 模型 | 说明 |
-|------|------|------|
-| ASR 转录 | `qwen3-asr-flash-filetrans` | 阿里云语音识别，支持 8 小时长音频 |
-| 核心要点生成 | OpenClaw 当前会话模型 | 由 Agent 直接生成 |
-| 关键问答生成 | OpenClaw 当前会话模型 | 由 Agent 直接生成 |
-| 逐字稿格式化 | 无需模型 | Python 脚本处理 |
-
-## 完整工作流程
-
-### Step 1: 转录音频
+### Step 1: Transcribe audio
 
 ```bash
-export QWEN_API_KEY="sk-xxx"
 ./scripts/transcribe.sh "https://www.xiaoyuzhoufm.com/episode/xxxxx" /tmp/transcript_raw.json
 ```
 
-脚本会：
-1. 从小宇宙页面提取音频 URL
-2. 提交异步转录任务（qwen3-asr-flash-filetrans）
-3. 轮询等待完成（通常 2-5 分钟）
-4. 下载完整 JSON 结果
+The script extracts the audio URL from the 小宇宙 page, submits an async transcription task to Qwen ASR (`qwen3-asr-flash-filetrans`, supports up to 8-hour episodes), polls until complete (typically 2–5 min), and downloads the JSON result.
 
-### Step 2: 格式化逐字稿
+**Validation**: Confirm `/tmp/transcript_raw.json` exists and contains a `transcripts` array before proceeding.
+
+### Step 2: Format verbatim transcript
 
 ```bash
 python3 ./scripts/format_transcript.py /tmp/transcript_raw.json /tmp/transcript_formatted.md
 ```
 
-输出格式：
-```markdown
-**说话人** [HH:MM:SS]
-段落内容...（超过300字自动分段）
-```
+Outputs Markdown with `**Speaker** [HH:MM:SS]` headers, auto-splitting paragraphs longer than 300 characters. Speaker detection uses content markers (e.g. "我是XXX"), not model diarization.
 
-### Step 3: AI 生成总结（由 Agent 执行）
+**Validation**: Confirm the output file is non-empty and contains at least one `**...**` speaker header.
 
-读取转录文本后，Agent 使用当前会话模型生成总结。
+### Step 3: AI-generated summary (Agent)
 
-**生成要求：**
-1. **核心要点**：提炼 5-8 个最重要的观点，按主题分组
-2. **关键 Q&A**：生成 8-10 个问答对，覆盖核心内容
-3. 使用中文，保持简洁专业
+Read the formatted transcript, then generate:
 
-### Step 4: 整合输出
+1. **核心要点 (Key points)**: 5–8 most important insights, grouped by theme
+2. **关键 Q&A (Key Q&A)**: 8–10 question-answer pairs covering core content
+3. Write in Chinese, keep tone concise and professional
 
-将总结 + 逐字稿整合成完整 Markdown 文件，保存到 `/workspace/podcasts/[播客名称].md`
+### Step 4: Assemble final output
 
----
+Merge the summary and verbatim transcript into one Markdown file saved to `/workspace/podcasts/[播客名称].md`. See `README.md` for the full output template.
 
-## 最终输出格式
+**Validation**: Ensure the final file contains all three sections (核心要点, 关键问答, 逐字稿) before reporting success.
 
-```markdown
-# [播客名称] [期号]｜[标题]
+## Notes
 
-**播客链接**: https://www.xiaoyuzhoufm.com/episode/xxxxx  
-**主播**: [主播名]（[身份介绍]）  
-**嘉宾**: [嘉宾名]（[身份介绍]）
-
----
-
-## 📌 核心要点
-
-### 1. [主题一]
-- 要点内容
-- 要点内容
-
-### 2. [主题二]
-- 要点内容
-- 要点内容
-
-### 3. [主题三]
-- 要点内容
-
-...（5-8 个主题分组）
-
----
-
-## ❓ 关键问答
-
-### Q1: [问题]？
-[回答内容]
-
-### Q2: [问题]？
-[回答内容]
-
-...（8-10 个问答）
-
----
-
-## 📝 逐字稿
-
-**说话人** [00:00:00]
-段落内容...
-
-**说话人** [00:01:23]
-段落内容...
-
-（按说话人分段，超过300字自动换段，带时间戳）
-```
-
----
-
-## 脚本说明
-
-### transcribe.sh
-
-```bash
-# 基本用法
-./scripts/transcribe.sh <小宇宙URL或音频URL> [输出文件]
-
-# 示例
-./scripts/transcribe.sh "https://www.xiaoyuzhoufm.com/episode/xxxxx" output.json
-./scripts/transcribe.sh "https://media.xyzcdn.net/xxx.mp3" output.json
-```
-
-### format_transcript.py
-
-```bash
-# 格式化转录结果
-python3 ./scripts/format_transcript.py <输入JSON> <输出MD> [最大字数]
-
-# 示例
-python3 ./scripts/format_transcript.py /tmp/raw.json /tmp/formatted.md 300
-```
-
-## 技术细节
-
-- **ASR 模型**: `qwen3-asr-flash-filetrans`（支持 8 小时长音频）
-- **异步转录**: 使用 X-DashScope-Async 头
-- **轮询间隔**: 10 秒
-- **超时**: 1 小时
-- **说话人识别**: 通过内容特征（"我是XXX"）识别，非模型 diarization
-
-## 注意事项
-
-1. 长音频（1小时+）转录需要 2-10 分钟
-2. 当前模型不支持说话人分离，通过内容特征识别说话人
-3. 需要安装 `jq` 和 `python3`
-4. 核心要点和 Q&A 质量取决于 OpenClaw 当前会话使用的模型
+- Long episodes (1 h+) may take 2–10 min to transcribe; the script polls with a 1-hour timeout
+- Speaker identification relies on content markers, not model-based diarization
+- Summary quality depends on the OpenClaw session model in use
